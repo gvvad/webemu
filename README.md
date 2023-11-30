@@ -4,7 +4,7 @@ WebEmu is a emulator of [Nintendo Entertainment System (NES)](https://en.wikiped
 
 ## 🎯 Usage
 
-Copy source to your web server, or use github pages.
+Copy source to your web server, or use [github pages](https://gvvad.github.io/webemu/).
 
 ### 🎮 Default controllers
 
@@ -28,7 +28,6 @@ ROM|Description|Note
 [Mario Bros.](https://nescartdb.com/profile/view/1099/mario-bros)|Some fx sounds at wrong tone.|
 [Tom & Jerry](https://nescartdb.com/profile/view/181/tom-jerry)|Vertical image jitter at intro screen.|
 [Battletoads](https://nescartdb.com/profile/view/23/battletoads)|Vertical image jitter during the game.|
-[]()||
 <!-- []()|| -->
 
 ## 📃 To do
