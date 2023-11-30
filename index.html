@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebEmu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <script src="./src/elements.js"></script>
+    <style>
+        .screen {
+            border: 1px var(--bs-gray) solid;
+            aspect-ratio: auto 256/240;
+            image-rendering: pixelated;
+        }
+
+        .text-break-all {
+            word-wrap: break-word !important;
+            word-break: break-all !important;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <template id="tmp-rom-list-item">
+        <li class="mb-2 hstack justify-content-between">
+            <span class="text-break-all">
+                <i class="bi bi-play-fill"></i>
+                <a href="#" class="text-dark"></a>
+            </span>
+            <div class="dropdown">
+                <button class="btn btn-link p-0 ms-2 fs-5" data-bs-toggle="dropdown"><i
+                        class="bi bi-three-dots"></i></button>
+                <ul class="dropdown-menu">
+                    <!--<li><button class="dropdown-item"><i class="bi bi-pencil"></i> Rename</button></li>
+                    <li><hr class="dropdown-divider"></li>-->
+                    <li><button class="dropdown-item btn btn-danger"><i class="bi bi-trash"></i> Remove</button></li>
+                </ul>
+            </div>
+        </li>
+    </template>
+
+    <input class="visually-hidden" type="file" accept=".nes" id="i-local-file">
+
+    <div class="container">
+        <nav class="navbar navbar-expand-md navbar-light bg-light">
+            <button class="btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#optionsSidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="#">WebEmu</a>
+        </nav>
+    </div>
+
+    <div class="container p-0">
+        <div class="row g-0">
+            <div class="col-3 offcanvas-lg offcanvas-start" id="optionsSidebar">
+                <div class="offcanvas-header border-bottom">
+                    <h5 class="offcanvas-title">Options</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"
+                        data-bs-target="#optionsSidebar"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="list-unstyled">
+                        <!-- <li class="fs-5">
+                            <i class="bi bi-star"></i> Recently:
+                        </li> -->
+
+                        <li class="fs-5">
+                            <div class="d-flex flex-column">
+                                <div class="mb-2">
+                                    <i class="bi bi-controller"></i> Roms:
+                                    <button class="btn btn-link p-0 float-end fs-5" onclick="window.openRomFile();"><i
+                                            class="bi bi-plus-lg" title="Add rom file"></i></button>
+                                </div>
+                                <ul is="rom-list" id="rom-list" class="list-unstyled fs-6"></ul>
+                            </div>
+                        </li>
+                        <!-- <li class="fs-6">
+                            <i class="bi bi-gear"></i> <a href="#" class="text-dark">Options</a>
+                        </li> -->
+                    </ul>
+                </div>
+            </div>
+            <div class="col mx-0 mx-sm-3">
+                <canvas width="256" height="240" class="screen w-100" id="canvas-0"></canvas>
+                <div class="mx-2 mx-sm-0">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            Emulator
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><button class="dropdown-item" onclick="app.reset();">Soft reset</button></li>
+                            <li><button class="dropdown-item" onclick="app.hardReset();">Hard reset</button></li>
+                            <li><button class="dropdown-item" onclick="app.powerOff();">Power off</button></li>
+                        </ul>
+                    </div>
+                    <div class="float-end">
+                        <button type="button" class="btn btn-primary me-1" onclick="window.fullScreen();"><i
+                                class="bi bi-fullscreen" title="Fullscreen"></i></button>
+                        <div class="btn-group float-end" role="group" aria-label="State buttons">
+                            <button type="button" class="btn btn-primary" onclick="app.saveState();">Save State</button>
+                            <button type="button" class="btn btn-primary" onclick="app.loadState();">Load State</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+<script src="src/main.js" type="module"></script>
+
+</html>
