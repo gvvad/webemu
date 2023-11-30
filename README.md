@@ -36,7 +36,7 @@ ROM|Description|Note
 * Addition mappers implementation.
 * Web service worker ([PWA](https://en.wikipedia.org/wiki/Progressive_web_app)) realization.
 * Adaptation web interface for mobile devices (virtual gamepad for touch screen).
-* 
+* Implement 2nd player controller.
 
 ## 👀 Contributing
 
