@@ -25,9 +25,9 @@ class EObject extends Object {
                 let isDefine = false;
                 for (let i = 0; i < res.length; i++) {
                     res[i] = this._getStateItem(el[i]);
-                    isDefine |= !!res[i];
+                    if (res[i] != undefined) isDefine = true;
                 }
-                return (isDefine) ? res : undefined;
+                if (isDefine) return res;
             }
         } else {
             return el;
