@@ -4,23 +4,23 @@ class KeyboardInput extends StandardInputSource {
     constructor() {
         super();
         this._map = {
-            "KeyS": 0, "KeyA": 1,
-            "KeyQ": 2, "KeyW": 3,
-            "ArrowUp": 4, "ArrowDown": 5, "ArrowLeft": 6, "ArrowRight": 7
+            "KeyS": 0x01, "KeyA": 0x02,
+            "KeyQ": 0x04, "KeyW": 0x08,
+            "ArrowUp": 0x10, "ArrowDown": 0x20, "ArrowLeft": 0x40, "ArrowRight": 0x80
         };
         
         window.addEventListener("keydown", (e) => {
-            let i = this._map[e.code];
-            if (i !== undefined) {
-                this.btnVector[i] = true;
+            let bit = this._map[e.code];
+            if (bit !== undefined) {
+                this._value |= bit;
                 e.preventDefault();
             }
         });
 
         window.addEventListener("keyup", (e) => {
-            let i = this._map[e.code];
-            if (i !== undefined) {
-                this.btnVector[i] = false;
+            let bit = this._map[e.code];
+            if (bit !== undefined) {
+                this._value &= ~bit;
                 e.preventDefault();
             }
         });

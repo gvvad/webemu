@@ -12,7 +12,7 @@ class InputController {
 
     pool() {
         for (const controller of this._aController) {
-            this._controllerBuf |= controller.pool();
+            this._controllerBuf |= controller.value;
         }
         return this._controllerBuf;
     }
@@ -29,22 +29,12 @@ class InputController {
 
 class StandardInputSource {
     constructor() {
-        /**[A, B, Select, Start, Up, Down, Left, Right] */
-        this.btnVector = new Array(8);
-        this.btnVector.fill(false);
+        this._value = 0;
     }
 
-    pool() {
-        let res = 0;
-        if (this.btnVector[0]) res |= 0x01;
-        if (this.btnVector[1]) res |= 0x02;
-        if (this.btnVector[2]) res |= 0x04;
-        if (this.btnVector[3]) res |= 0x08;
-        if (this.btnVector[4]) res |= 0x10;
-        if (this.btnVector[5]) res |= 0x20;
-        if (this.btnVector[6]) res |= 0x40;
-        if (this.btnVector[7]) res |= 0x80;
-        return res;
+    /**Buttons 8 bit mask [A, B, Select, Start, Up, Down, Left, Right]  */
+    get value() {
+        return this._value;
     }
 }
 

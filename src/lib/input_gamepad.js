@@ -1,8 +1,8 @@
 import { StandardInputSource } from "./input.js"
 const defaultMap = {
-    0: 0, 2: 1,
-    8: 2, 9: 3,
-    12: 4, 13: 5, 14: 6, 15: 7
+    0: 0x01, 2: 0x02,
+    8: 0x04, 9: 0x08,
+    12: 0x10, 13: 0x20, 14: 0x40, 15: 0x80
 };
 
 class GamepadInput extends StandardInputSource {
@@ -45,17 +45,19 @@ class GamepadInput extends StandardInputSource {
         });
     }
 
-    pool() {
+    get value() {
         if (this._gpMapLen) {
-            this.btnVector.fill(false);
+            this._value = 0;
             for (const gp of navigator.getGamepads()) {
                 if (!gp) continue;
                 let map = this._gpMap[gp.index];
                 for (const btnIndx in map) {
-                    this.btnVector[map[btnIndx]] = gp.buttons[btnIndx].pressed
+                    if (gp.buttons[btnIndx].pressed) {
+                        this._value |= map[btnIndx];
+                    }
                 }
             }
-            return super.pool();
+            return this._value;
         } else {
             return 0;
         }
