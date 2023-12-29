@@ -21,7 +21,11 @@ class NES extends EObject {
         this._apuCycleStamp = 0;
         this._cpuCycleStamp = 0;
 
-        this._fps = 60;
+        this._fps = 60.0988;
+        this._frameTime = 1000.0 / this._fps;
+        
+        this._frameTimeStamp = 0.0;
+        this._isTimeStampSync = false;
 
         this._fraction = 0;
         this._frame = 0;
@@ -31,13 +35,15 @@ class NES extends EObject {
         this._bus.inputController.setStandardInput(new GamepadInput());
 
         this._frameDispatcher = this._frameDispatcher.bind(this);
-        this._isBrowser = !!document && !!window;
+        // this._isBrowser = !!document && !!window;
     }
     get _stateExclude() {
         return ["_isBusy", "_syncTimerId", "_fps", "_keyboardInput", "_gamepadInput",
             "_isBrowser", "_frameDispatcher", "_state", "_isSaveState", "_isLoadState"];
     }
     get bus() { return this._bus; }
+    get fps() { return this._fps; }
+    get frameTimeS() { return this._frameTime / 1000; }
 
     get _cyclesPerLine() {
         return this._clsLine + this._cyclesFraction;
@@ -62,7 +68,7 @@ class NES extends EObject {
         switch (id) {
             default:
             case 0: //NTSC
-                this._fps = 60;
+                this._fps = 60.0988;
                 this._bus.cpuFrequency = 1789773;
                 this._apuStepRate = 7457;
                 this._clsLine = 113;
@@ -70,7 +76,7 @@ class NES extends EObject {
                 this._totalLines = 261;
                 break;
             case 1: //PAL
-                this._fps = 50;
+                this._fps = 50.0070;
                 this._bus.cpuFrequency = 1662607;
                 this._apuStepRate = 8313;
                 this._clsLine = 106;
@@ -78,6 +84,7 @@ class NES extends EObject {
                 this._totalLines = 312;
                 break;
         }
+        this._frameTime = 1000.0 / this._fps;
     }
 
     /**@param {ArrayBuffer} blobData */
@@ -108,6 +115,7 @@ class NES extends EObject {
     }
 
     _frameDispatcher() {
+        this._soundRender.syncTime();
         this._frame++;
 
         /**Find 'sprite 0 hit' line number */
@@ -148,18 +156,20 @@ class NES extends EObject {
         this._bus.ppuBus.doFrameBegin();
         this._render.doFramePredraw();
 
-        this.scanLine = 0
+        this.scanLine = 0;
+        let jobLineDraw = this._render.doLineDraw.bind(this._render);
+        let jobLineHSync = this._bus.ppuBus.doScanLineHSync.bind(this._bus.ppuBus);
         for (; this.scanLine < 240; this.scanLine++) {
             this._ppuCycles = 0;
-            
-            this._bus.cpu.scheduler.putJob(20, this._render.doLineDraw.bind(this._render));
+
+            this._bus.cpu.scheduler.putJob(20, jobLineDraw);
             //this._render.doLineDraw();
             if (lineHit == this.scanLine && this._bus.ppuBus.rMask.isAllRendering) {
                 this._bus.cpu.scheduler.putJob(
                     clsHit,
                     (function () { this.rStatus.isSpriteHit = true; }).bind(this._bus.ppuBus));
             }
-            this._bus.cpu.scheduler.putJob(88, this._bus.ppuBus.doScanLineHSync.bind(this._bus.ppuBus));
+            this._bus.cpu.scheduler.putJob(88, jobLineHSync);
             this._cyclesDispatch(this._cyclesPerLine);
         }
         this._render.doShowFrame();
@@ -183,30 +193,35 @@ class NES extends EObject {
         if (!this._intervalId && this._bus.mapper) {
             this._worker = new Promise((function (resolveFunc) {
                 this._intervalId = setInterval((resolver) => {
-                    if (this._isBusy) return;
-                    if (this._isSuspend) {
-                        clearInterval(this._intervalId);
-                        this._intervalId = undefined;
-                        this._soundRender.shut();
-                        resolver();
-                        return;
+                    let now = performance.now();
+                    if (!this._isTimeStampSync) {
+                        this._frameTimeStamp = now + this._frameTime;
+                        this._isTimeStampSync = true;
                     }
 
-                    try {
-                        this._isBusy = true;
+                    if (this._frameTimeStamp < now) {
+                        this._frameTimeStamp += this._frameTime;
 
-                        if (this._isBrowser && !document.hidden) {
-                            window.requestAnimationFrame(this._frameDispatcher);
-                        } else {
-                            this._frameDispatcher();
+                        if (this._isBusy) return;
+                        if (this._isSuspend) {
+                            clearInterval(this._intervalId);
+                            this._intervalId = undefined;
+                            this._soundRender.shut();
+                            this._isTimeStampSync = false;
+                            resolver();
+                            return;
                         }
 
-                    } catch (e) {
-                        console.error(e);
-                    } finally {
-                        this._isBusy = false;
+                        try {
+                            this._isBusy = true;
+                            this._frameDispatcher();
+                        } catch (e) {
+                            console.error(e);
+                        } finally {
+                            this._isBusy = false;
+                        }
                     }
-                }, 1000 / this._fps, resolveFunc);
+                }, 5, resolveFunc);
             }).bind(this));
         }
     }

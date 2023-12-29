@@ -1,39 +1,47 @@
+const BUFFER_LENGTH = 1024 * 32;
 class PcmProcessor extends AudioWorkletProcessor {
     constructor(options) {
         super();
         /**PCM values array */
-        this._aDirectBuffer = new Float32Array(512);
-        /**Sample rates for every sample */
-        this._aDirectRate = new Float32Array(512);
-        this._directPos = 0;
-        this._directDst = 0;
-        this._directRest = 0;
+        this._aBuffer = new Float32Array(BUFFER_LENGTH);
+        this._aCycles = new Uint32Array(BUFFER_LENGTH);
 
-        /**@type {Float32Array} */
-        this._aDmcBuffer = undefined;
-        this._dmcRate = 1000;
-        this._dmcPos = 0;
-        this._dmcDst = 0;
-        this._dmcRest = 0;
+        this._pos = 0;
+        this._dst = 0;
+        this._current = 0.0;
+
+        this._syncCycles = 0;
+        this._lastCycles = 0;
+
+        this._cycles = 0;
+        this._cpuRate = 37.2;
 
         this.port.onmessage = (e) => {
             /**@type {Float32Array} */
             if (e.data.direct) {
                 const srcVal = e.data.direct.buffer;
-                const srcRate = e.data.direct.rate;
-                for (let i = 0; i < srcVal.length; i++) {
-                    this._aDirectBuffer[this._directDst] = srcVal[i];
-                    this._aDirectRate[this._directDst] = srcRate[i];
-                    this._directDst = ++this._directDst % this._aDirectBuffer.length;
+                const srcCycles = e.data.direct.cycles;
+                
+                if (srcCycles[0] < this._lastCycles) {
+                    this._pos = 0;
+                    this._dst = 0;
                 }
-            }
+                this._lastCycles = srcCycles[srcVal.length - 1];
 
-            if (e.data.sample) {
-                this._dmcRate = e.data.sample.rate;
-                this._aDmcBuffer = e.data.sample.buffer;
-                this._dmcPos = 0;
-                this._dmcDst = this._aDmcBuffer.length - 1;
-                this._dmcRest = 0;
+                for (let i = 0; i < srcVal.length; i++) {
+                    this._aBuffer[this._dst] = srcVal[i];
+                    this._aCycles[this._dst] = srcCycles[i];
+                    this._dst = ++this._dst % this._aBuffer.length;
+                }
+            } else {
+                this._cpuRate = (e.data.cpuFreq / sampleRate);
+                let td = currentTime - e.data.syncTime;
+                let cd = td * e.data.cpuFreq;
+                let fixC = e.data.syncCycles + cd;
+                // console.log(this._cycles - fixC);
+                if ((this._cycles > fixC) || (this._cycles < (fixC - 3000))) {
+                    this._cycles = fixC;
+                }
             }
         }
     }
@@ -42,31 +50,17 @@ class PcmProcessor extends AudioWorkletProcessor {
         /**@type {Float32Array} */
         const channel = outputs[0][0];
 
-        if (this._dmcPos != this._dmcDst) {
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = this._aDmcBuffer[this._dmcPos];
-                this._dmcRest += this._dmcRate;
-                if (this._dmcRest > sampleRate) {
-                    this._dmcRest %= sampleRate;
-                    this._dmcPos++;
-                    if (this._dmcPos == this._dmcDst) break;
+        for (let i = 0; i < channel.length; i++) {
+            this._cycles += this._cpuRate;
+            if (this._pos != this._dst) {
+                if (this._aCycles[this._pos] <= this._cycles) {
+                    this._current = this._aBuffer[this._pos];
+                    this._pos = ++this._pos % this._aBuffer.length;
                 }
             }
-            return true;
+            channel[i] = this._current;
         }
-
-        if (this._directDst != this._directPos) {
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = this._aDirectBuffer[this._directPos];
-                this._directRest += this._aDirectRate[this._directPos];
-                if (this._directRest > sampleRate) {
-                    this._directRest %= sampleRate;
-                    this._directPos = ++this._directPos % this._aDirectBuffer.length;
-                    if (this._directPos == this._directDst) break;
-                }
-            }
-        }
-
+        // console.log(`cyc:${this._cycles} posCyc:${this._aCycles[this._pos]} pos:${this._pos} dst:${this._dst}`);
         return true;
     }
 }

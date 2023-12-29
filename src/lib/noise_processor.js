@@ -5,15 +5,11 @@ class RandomNoiseProcessor extends AudioWorkletProcessor {
         this._noiseBuffer = new Float32Array(sampleRate);
         for (let i = 0; i < this._noiseBuffer.length; i++) {
             this._noiseBuffer[i] = Math.random() * 2 - 1.0;
-            //this._noiseBuffer[i] = (Math.random() > 0.5)? 1 : -1;
+            // this._noiseBuffer[i] = (Math.random() > 0.5)? 1 : -1;
         }
         this._pos = 0;
         this._rate = 0;
         this._buzzRate = 0;
-
-        this.port.onmessage = (e) => {
-
-        }
     }
 
     static get parameterDescriptors() {
@@ -38,11 +34,11 @@ class RandomNoiseProcessor extends AudioWorkletProcessor {
 
         for (let i = 0; i < channel.length; i++) {
             channel[i] = this._noiseBuffer[this._pos];
-            
+
             this._rate += freq;
             if (this._rate >= this._halfSRate) {
                 this._rate %= this._halfSRate;
-                if (++this._pos >= this._noiseBuffer.length) this._pos = 0;
+                this._pos = ++this._pos % this._noiseBuffer.length;
             }
 
             if (mode) {
@@ -53,7 +49,7 @@ class RandomNoiseProcessor extends AudioWorkletProcessor {
                 }
             }
         }
-        
+
         return true;
     }
 }

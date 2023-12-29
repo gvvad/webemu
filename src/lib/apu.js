@@ -269,8 +269,8 @@ class APUNoiseRegisterGroup extends APUOscWithEnvelopeCounter {
 
     /**Constant amplitude or envelope */
     get isConstAmp() { return !!(this._reg[0] & 0x10); }
-    /**0 - white noise, 1 - buzzing */
-    get mode() { return this._reg[2] & 0x80; }
+    /**false - white noise, true - buzzing */
+    get mode() { return !!(this._reg[2] & 0x80); }
 
     get p() { return this._reg[2] & 0xF; }
     get period() { return NOISE_PERIOD_TABLE[this.p]; }
@@ -303,23 +303,26 @@ class APUDMCRegisterGroup extends APUOscBase {
          * @param {Number} action 0 - direct, 1 - dmc
          */
         this._callback = Function.prototype;
-        this._pcmBuffer = new Uint8Array(1024);
-        this._pcmRateBuffer = new Float32Array(1024);
+        this._pcmBuffer = new Uint8ClampedArray(1024 * 32);
+        this._pcmCyclesBuffer = new Uint32Array(1024 * 32);
         this._pcmBufferPos = 0;
-        this._pcmRate = 0;
-        this._pcmPrevCycle = 0;
         this._isBufferFill = false;
+        this._current = 0;
     }
     get isEnable() { return this._isEnable; }
     set isEnable(v) {
         let a = !this._isEnable && v;
         this._isEnable = v;
-        if (a) this._callback(1);
-
+        if (a) this._pushDPCM();
     }
     get pcmBuffer() { return this._pcmBuffer; }
     get pcmBufferPos() { return this._pcmBufferPos; }
-    get pcmRateBuffer() { return this._pcmRateBuffer; }
+    get pcmCyclesBuffer() { return this._pcmCyclesBuffer; }
+    get isBufferFill() {
+        let res = this._isBufferFill;
+        this._isBufferFill = false;
+        return res;
+    }
 
     get isIrq() { return !!(this._reg[0] & 0x80); }
     get isLoop() { return !!(this._reg[0] & 0x40); }
@@ -346,7 +349,7 @@ class APUDMCRegisterGroup extends APUOscBase {
                 next() {
                     if (this.scope._pcmBufferPos == this.i) return { done: true };
                     let res = this.i;
-                    this.i = ++this.i % 1024;
+                    this.i = ++this.i % this.scope._pcmBuffer.length;
                     return {
                         value: res,
                         done: false
@@ -358,54 +361,48 @@ class APUDMCRegisterGroup extends APUOscBase {
         return range;
     }
 
+    pcmBufferLength(startPos) {
+        let len = 0;
+        if (startPos <= this._pcmBufferPos) {
+            len = this._pcmBufferPos - startPos;
+        } else {
+            len = this._pcmBuffer.length - startPos;
+            len += this._pcmBufferPos;
+        }
+        return len;
+    }
+
     write(num, data) {
         super.write(num, data);
-        if (num == 1) {
-            this._pcmBuffer[this._pcmBufferPos] = data & 0x7F;
-            this._pcmRateBuffer[this._pcmBufferPos] = this._apu.bus.cpuFrequency / (this._apu.bus.cpu.cycles - this._pcmPrevCycle);
-            this._pcmPrevCycle = this._apu.bus.cpu.cycles;
-            this._pcmBufferPos = ++this._pcmBufferPos % 1024;
+        if (num == 1) { // 4011
+            this._current = data & 0x7F;
+            this._pcmBuffer[this._pcmBufferPos] = this._current;
+            this._pcmCyclesBuffer[this._pcmBufferPos] = this._apu._bus._cpu.cycles;
+            this._pcmBufferPos = ++this._pcmBufferPos % this._pcmBuffer.length;
             this._isBufferFill = true;
             return;
         }
-        // this._callback(num, data);
     }
 
-    getDPCMData() {
-        let res = new Uint8ClampedArray(this.length * 8);
-        let smpl = 127;
+    _pushDPCM() {
         let base = this.address;
-        let k = 0;
+        let cycles = this._apu.bus.cpu.cycles;
         for (let i = 0; i < this.length; i++) {
             let byte = this._apu.bus._read(base++);
             for (let j = 0; j < 8; j++) {
-                res[k] = smpl + ((byte & 0x1) ? 1 : -1);
-                smpl = res[k];
-                k++
+                if (byte & 0x1) {
+                    if (this._current <= 125) this._current += 2;
+                } else {
+                    if (this._current >= 2) this._current -= 2;
+                }
+                this._pcmBuffer[this._pcmBufferPos] = this._current;
+                this._pcmCyclesBuffer[this._pcmBufferPos] = cycles;
+                cycles += this.dmcRate;
+                this._pcmBufferPos = ++this._pcmBufferPos % this._pcmBuffer.length;
                 byte >>= 1;
             }
         }
-        return res;
-    }
-
-    // quarterFrameClock() {
-    //     if (this._isBufferFill) {
-    //         this._isBufferFill = false;
-    //         this._callback(0);
-    //     }
-    // }
-    halfFrameClock() {
-        if (this._isBufferFill) {
-            this._isBufferFill = false;
-            this._callback(0);
-        }
-    }
-    resetState() {
-        super.resetState();
-        this._pcmBufferPos = 0;
-        this._pcmRate = 0;
-        this._pcmPrevCycle = 0;
-        this._isBufferFill = false;
+        this._isBufferFill = true;
     }
 }
 

@@ -50,6 +50,7 @@ class PPUMask extends Register {
 }
 
 class PPUStatus extends Register {
+    /**@param {BusPPU} ppuBus */
     constructor(ppuBus) {
         super();
         this._ppuBus = ppuBus;
@@ -63,14 +64,20 @@ class PPUStatus extends Register {
     /**Sprite overflow (more than eight sprites appear on a scanline).*/
     get overflow() { return !!(this._val & 0x20); }
     set overflow(v) {
-        this._val &= ~0x20;
-        if (v) { this._val |= 0x20; }
+        if (v) {
+            this._val |= 0x20;
+        } else {
+            this._val &= ~0x20;
+        }
     }
     /**Sprite 0 Hit. */
     get isSpriteHit() { return !!(this._val & 0x40); }
     set isSpriteHit(v) {
-        this._val &= ~0x40;
-        if (v) { this._val |= 0x40; }
+        if (v) {
+            this._val |= 0x40;
+        } else {
+            this._val &= ~0x40;
+        }
     }
 }
 
@@ -257,7 +264,7 @@ class BusPPU extends BusBase {
     }
 
     get rOamAddr() { return this._rOamAddr; }
-    set rOamAddr(v) { return this._rOamAddr = v & 0xFF; }
+    set rOamAddr(v) { this._rOamAddr = v & 0xFF; }
 
     getNameTable(num) {
         return this._aNameTable[this._mainBus.mapper.mirroringMap[num]];

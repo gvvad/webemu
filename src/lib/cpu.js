@@ -35,49 +35,49 @@ class Scheduler {
 class StatusRegister extends Register {
     constructor() {
         super();
+        this.val = 0;
+    }
+    get val() {
+        this._val = 0;
+        if (this._c) this._val |= 0x01;
+        if (this._z) this._val |= 0x02;
+        if (this._i) this._val |= 0x04;
+        if (this._d) this._val |= 0x08;
+        if (this._b) this._val |= 0x10;
+        if (this._v) this._val |= 0x40;
+        if (this._n) this._val |= 0x80;
+        return this._val;
+    }
+    set val(v) {
+        this._c = !!(v & 0x01);
+        this._z = !!(v & 0x02);
+        this._i = !!(v & 0x04);
+        this._d = !!(v & 0x08);
+        this._b = !!(v & 0x10);
+        this._v = !!(v & 0x40);
+        this._n = !!(v & 0x80);
     }
     /**Negative */
-    get n() { return !!(this._val & 0x80); }
-    set n(v) {
-        this._val &= ~0x80;
-        if (v) { this._val |= 0x80; }
-    }
+    get n() { return this._n; }
+    set n(v) { this._n = !!v; }
     /**Overflow */
-    get v() { return !!(this._val & 0x40); }
-    set v(v) {
-        this._val &= ~0x40;
-        if (v) { this._val |= 0x40; }
-    }
+    get v() { return this._v; }
+    set v(v) { this._v = !!v; }
     /**Break */
-    get b() { return !!(this._val & 0x10); }
-    set b(v) {
-        this._val &= ~0x10;
-        if (v) { this._val |= 0x10; }
-    }
+    get b() { return this._b; }
+    set b(v) { this._b = !!v; }
     /**Decimal */
-    get d() { return !!(this._val & 0x08); }
-    set d(v) {
-        this._val &= ~0x08;
-        if (v) { this._val |= 0x08; }
-    }
+    get d() { return this._d; }
+    set d(v) { this._d = !!v; }
     /**Interrupt (IRQ disable) */
-    get i() { return !!(this._val & 0x04); }
-    set i(v) {
-        this._val &= ~0x04;
-        if (v) { this._val |= 0x04; }
-    }
+    get i() { return this._i; }
+    set i(v) { this._i = !!v; }
     /**Zero */
-    get z() { return !!(this._val & 0x02); }
-    set z(v) {
-        this._val &= ~0x02;
-        if (v) { this._val |= 0x02; }
-    }
+    get z() { return this._z; }
+    set z(v) { this._z = !!v; }
     /**Carry */
-    get c() { return !!(this._val & 0x01); }
-    set c(v) {
-        this._val &= ~0x01;
-        if (v) { this._val |= 0x01; }
-    }
+    get c() { return this._c; }
+    set c(v) { this._c = !!v; }
 
     toString() {
         return `${this.n ? "N" : "-"} ${this.v ? "V" : "-"} ${this.b ? "B" : "-"} ${this.d ? "D" : "-"} ${this.i ? "I" : "-"} ${this.z ? "Z" : "-"} ${this.c ? "C" : "-"}`;

@@ -128,11 +128,15 @@ class App extends EventTarget {
 
     async powerOn() {
         if (!this._isSetAudioCtx) {
-            let ctx = new AudioContext();
-            await ctx.audioWorklet.addModule('src/lib/pcm_processor.js');
-            await ctx.audioWorklet.addModule('src/lib/noise_processor.js');
-            this._nes.setAudioContext(ctx);
-            this._isSetAudioCtx = true;
+            try {
+                let ctx = new AudioContext();
+                await ctx.audioWorklet.addModule('src/lib/pcm_processor.js');
+                await ctx.audioWorklet.addModule('src/lib/noise_processor.js');
+                this._nes.setAudioContext(ctx);
+                this._isSetAudioCtx = true;
+            } catch(e) {
+                console.warn(e);
+            }
         }
         this._nes.powerOn();
     }
