@@ -176,7 +176,7 @@ class RenderSound {
     /**@param {AudioContext} context */
     setContext(context) {
         this._ctx = context;
-        this._masterGain = new GainNode(this._ctx, { gain: 0.1 });
+        this._masterGain = new GainNode(this._ctx, { gain: 0.5 });
         this._masterGain.connect(this._ctx.destination);
 
         this._aSqOsc = [new PulseOsc(this._ctx, this._masterGain), new PulseOsc(this._ctx, this._masterGain)];
