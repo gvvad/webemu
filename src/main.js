@@ -1,10 +1,7 @@
 import { NES } from "./lib/nes.js"
+import { StandardInputSource } from "./lib/input.js";
 
 class DBMan {
-    constructor() {
-
-    }
-
     open(dbName, storeInit) {
         return new Promise((resolveFunc, rejectFunc) => {
             this._openReq = indexedDB.open(dbName);
@@ -67,7 +64,7 @@ class DBMan {
         });
     }
 
-    delete (store, key) {
+    delete(store, key) {
         return new Promise((resolveFunc, rejectFunc) => {
             let tr = this._openReq.result.transaction(store, "readwrite");
             let objStore = tr.objectStore(store);
@@ -134,7 +131,7 @@ class App extends EventTarget {
                 await ctx.audioWorklet.addModule('src/lib/noise_processor.js');
                 this._nes.setAudioContext(ctx);
                 this._isSetAudioCtx = true;
-            } catch(e) {
+            } catch (e) {
                 console.warn(e);
             }
         }
@@ -186,7 +183,7 @@ window.openRomFile = function () {
 };
 
 window.fullScreen = function () {
-    document.querySelector("#canvas-0").requestFullscreen();
+    document.querySelector(".screen-wrapper").requestFullscreen();
 };
 
 await window.app.init();
@@ -211,3 +208,84 @@ document.querySelector("#rom-list").addEventListener("onItemAction", async funct
             break;
     }
 });
+
+window.screen?.orientation?.addEventListener("change", (e) => {
+    let scrOrientation = e.target;
+    if (scrOrientation.type.indexOf("portrait") != -1) {
+        try {
+            document.exitFullscreen();
+        } catch (e) { }
+    } else {
+        window.fullScreen();
+    }
+});
+
+class TouchPad extends StandardInputSource {
+    constructor(elem, elems) {
+        super();
+        this._padElem = elem;
+        this._elems = elems;
+        this._padElem.addEventListener("touchstart", this._tStart.bind(this));
+        this._padElem.addEventListener("touchmove", this._tStart.bind(this));
+        this._padElem.addEventListener("touchend", this._tEnd.bind(this));
+        this._padElem.addEventListener("touchcancel", this._tEnd.bind(this));
+
+        this._map = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80];
+        this._touches = {};
+    }
+
+    _isHit(rect, x, y) {
+        return (
+            x >= rect.left &&
+            x <= rect.right &&
+            y >= rect.top &&
+            y <= rect.bottom
+        );
+    }
+
+    _tStart(evt) {
+        for (const touch of evt.changedTouches) {
+            for (let i = 0; i < this._elems.length; i++) {
+                const rect = this._elems[i].getBoundingClientRect();
+
+                if (this._isHit(rect, touch.clientX, touch.clientY)) {
+                    this._touches[touch.identifier] = i;
+                    break;
+                }
+            }
+        }
+        evt.preventDefault();
+    }
+
+    _tEnd(evt) {
+        for (const touch of evt.changedTouches) {
+            delete this._touches[touch.identifier];
+        }
+        evt.preventDefault();
+    }
+
+    get value() {
+        let res = 0;
+        for (const key in this._touches) {
+            res |= this._map[this._touches[key]];
+        }
+        return res;
+    }
+}
+
+if ('ontouchstart' in window || navigator.maxTouchPoints) {
+    // Touch is supported
+    let tPadElem = document.querySelector(".touch-pad");
+    let buttons = new Array();
+    buttons.push(tPadElem.querySelector("#a-but"));
+    buttons.push(tPadElem.querySelector("#b-but"));
+    buttons.push(tPadElem.querySelector("#sl-but"));
+    buttons.push(tPadElem.querySelector("#st-but"));
+
+    buttons.push(tPadElem.querySelector("#u-dpad"));
+    buttons.push(tPadElem.querySelector("#d-dpad"));
+    buttons.push(tPadElem.querySelector("#l-dpad"));
+    buttons.push(tPadElem.querySelector("#r-dpad"));
+    window.app.nes.bus.inputController.setStandardInput(new TouchPad(tPadElem, buttons));
+    tPadElem.style.display = "";
+}

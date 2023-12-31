@@ -11,15 +11,39 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <script src="./src/elements.js"></script>
     <style>
-        .screen {
-            border: 1px var(--bs-gray) solid;
-            aspect-ratio: auto 256/240;
+        #canvas-0 {
             image-rendering: pixelated;
         }
 
         .text-break-all {
             word-wrap: break-word !important;
             word-break: break-all !important;
+        }
+
+        .screen-wrapper {
+            aspect-ratio: auto 256/240;
+        }
+
+        .touch-pad {
+            color: #8888;
+            stroke: #4448;
+        }
+
+        .touch-bar {
+            display: flex;
+            justify-content: space-between;
+            margin: 2em;
+        }
+
+        .touch-bar:nth-child(2) {
+            height: 10em;
+        }
+
+        .touch-bar>svg {
+            width: 10em;
+            /* margin-left: 2em;
+            margin-right: 2em; */
+            /* margin-bottom: 5em; */
         }
     </style>
 </head>
@@ -84,8 +108,47 @@
                     </ul>
                 </div>
             </div>
+
             <div class="col mx-0 mx-sm-3">
-                <canvas width="256" height="240" class="screen w-100" id="canvas-0"></canvas>
+                <div class="border border-1 border-dark w-100 mb-1">
+                    <div class="screen-wrapper position-relative d-flex justify-content-center">
+                        <div class="touch-pad position-absolute w-100 h-100 d-flex flex-column justify-content-between" style="display: none !important;;">
+                            <div class="touch-bar">
+                                <svg viewBox="0 0 450 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <g>
+                                        <rect id="sl-but" class="t-elem" width="200" height="100" x="0" y="0" rx="50">
+                                        </rect>
+                                        <rect id="st-but" class="t-elem" width="200" height="100" x="250" y="0" rx="50">
+                                        </rect>
+                                    </g>
+                                </svg>
+                            </div>
+                            
+                            <div class="touch-bar">
+                                <svg viewBox="-10 -10 320 320" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <g transform="rotate(15, 150, 150)">
+                                        <rect id="l-dpad" class="t-elem" width="150" height="100" x="0" y="100"></rect>
+                                        <rect id="r-dpad" class="t-elem" width="150" height="100" x="150" y="100">
+                                        </rect>
+                                        <rect id="u-dpad" class="t-elem" width="100" height="100" x="100" y="0"></rect>
+                                        <rect id="d-dpad" class="t-elem" width="100" height="100" x="100" y="200">
+                                        </rect>
+                                    </g>
+                                </svg>
+
+                                <svg viewBox="0 0 400 300" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <g>
+                                        <ellipse id="b-but" class="t-elem" cx="100" cy="100" rx="100" ry="100" />
+                                        <ellipse id="a-but" class="t-elem" cx="300" cy="200" rx="100" ry="100" />
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
+                        <canvas width="256" height="240" class="h-100 d-flex" id="canvas-0"></canvas>
+                    </div>
+                </div>
+
+                <!-- <canvas width="256" height="240" class="screen w-100" id="canvas-0"></canvas> -->
                 <div class="mx-2 mx-sm-0">
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown"
@@ -98,14 +161,15 @@
                             <li><button class="dropdown-item" onclick="app.powerOff();">Power off</button></li>
                         </ul>
                     </div>
+
                     <div class="float-end">
                         <button type="button" class="btn btn-primary me-1" onclick="window.fullScreen();"><i
                                 class="bi bi-fullscreen" title="Fullscreen"></i></button>
                         <div class="btn-group float-end" role="group" aria-label="State buttons">
                             <button type="button" class="btn btn-primary" onclick="app.saveState();"><i
-                                class="bi bi-floppy" title="Save state"></i></button>
+                                    class="bi bi-floppy" title="Save state"></i></button>
                             <button type="button" class="btn btn-primary" onclick="app.loadState();"><i
-                                class="bi bi-file-earmark-arrow-up" title="Load state"></i></button>
+                                    class="bi bi-file-earmark-arrow-up" title="Load state"></i></button>
                         </div>
 
                     </div>
@@ -113,9 +177,8 @@
             </div>
         </div>
     </div>
-
-
 </body>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
     crossorigin="anonymous"></script>
