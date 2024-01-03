@@ -221,10 +221,11 @@ window.screen?.orientation?.addEventListener("change", (e) => {
 });
 
 class TouchPad extends StandardInputSource {
-    constructor(elem, elems) {
+    constructor(elem, buttons, dpad) {
         super();
         this._padElem = elem;
-        this._elems = elems;
+        this._buttons = buttons;
+        this._dpad = dpad;
         this._padElem.addEventListener("touchstart", this._tStart.bind(this));
         this._padElem.addEventListener("touchmove", this._tStart.bind(this));
         this._padElem.addEventListener("touchend", this._tEnd.bind(this));
@@ -232,6 +233,9 @@ class TouchPad extends StandardInputSource {
 
         this._map = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80];
         this._touches = {};
+        this._isDpadTouch = false;
+        this._dpadSector = 0;
+        this._dpadTouchId = 0;
     }
 
     _isHit(rect, x, y) {
@@ -245,8 +249,20 @@ class TouchPad extends StandardInputSource {
 
     _tStart(evt) {
         for (const touch of evt.changedTouches) {
-            for (let i = 0; i < this._elems.length; i++) {
-                const rect = this._elems[i].getBoundingClientRect();
+            const dpadRect = this._dpad.getBoundingClientRect();
+            if (this._isHit(dpadRect, touch.clientX, touch.clientY)) {
+                const x = dpadRect.x + (dpadRect.width / 2);
+                const y = dpadRect.y + (dpadRect.height / 2);
+                let angle = (Math.atan2(y - touch.clientY, x - touch.clientX) * 180) / Math.PI;
+                angle = (angle + 360 + 7) % 360;
+                
+                this._dpadSector = Math.floor(angle / 45);
+                this._dpadTouchId = touch.identifier;
+                this._isDpadTouch = true;
+            }
+
+            for (let i = 0; i < this._buttons.length; i++) {
+                const rect = this._buttons[i].getBoundingClientRect();
 
                 if (this._isHit(rect, touch.clientX, touch.clientY)) {
                     this._touches[touch.identifier] = i;
@@ -259,6 +275,10 @@ class TouchPad extends StandardInputSource {
 
     _tEnd(evt) {
         for (const touch of evt.changedTouches) {
+            if (this._isDpadTouch && (this._dpadTouchId == touch.identifier)) {
+                this._isDpadTouch = false;
+                continue;
+            }
             delete this._touches[touch.identifier];
         }
         evt.preventDefault();
@@ -266,6 +286,35 @@ class TouchPad extends StandardInputSource {
 
     get value() {
         let res = 0;
+        if (this._isDpadTouch) {
+            switch(this._dpadSector) {
+                case 0:
+                    res |= 0x40;
+                    break;
+                case 1:
+                    res |= 0x40 | 0x10;
+                    break;
+                case 2:
+                    res |= 0x10;
+                    break;
+                case 3:
+                    res |= 0x10 | 0x80;
+                    break;
+                case 4:
+                    res |= 0x80;
+                    break;
+                case 5:
+                    res |= 0x80 | 0x20;
+                    break;
+                case 6:
+                    res |= 0x20;
+                    break;
+                case 7:
+                    res |= 0x20 | 0x40;
+                    break;
+            }
+        }
+
         for (const key in this._touches) {
             res |= this._map[this._touches[key]];
         }
@@ -276,16 +325,17 @@ class TouchPad extends StandardInputSource {
 if ('ontouchstart' in window || navigator.maxTouchPoints) {
     // Touch is supported
     let tPadElem = document.querySelector(".touch-pad");
+    let dpad = tPadElem.querySelector("#d-pad");
     let buttons = new Array();
     buttons.push(tPadElem.querySelector("#a-but"));
     buttons.push(tPadElem.querySelector("#b-but"));
     buttons.push(tPadElem.querySelector("#sl-but"));
     buttons.push(tPadElem.querySelector("#st-but"));
 
-    buttons.push(tPadElem.querySelector("#u-dpad"));
-    buttons.push(tPadElem.querySelector("#d-dpad"));
-    buttons.push(tPadElem.querySelector("#l-dpad"));
-    buttons.push(tPadElem.querySelector("#r-dpad"));
-    window.app.nes.bus.inputController.setStandardInput(new TouchPad(tPadElem, buttons));
+    // buttons.push(tPadElem.querySelector("#u-dpad"));
+    // buttons.push(tPadElem.querySelector("#d-dpad"));
+    // buttons.push(tPadElem.querySelector("#l-dpad"));
+    // buttons.push(tPadElem.querySelector("#r-dpad"));
+    window.app.nes.bus.inputController.setStandardInput(new TouchPad(tPadElem, buttons, dpad));
     tPadElem.style.display = "";
 }
